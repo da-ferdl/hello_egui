@@ -24,7 +24,6 @@ required-features = ["async"]
 
 [dependencies]
 egui.workspace = true
-egui_inbox.workspace = true
 egui_suspense = { workspace = true, optional = true }
 
 matchit = "0.8"
