@@ -1,6 +1,6 @@
-use crate::handler::Handler;
+use crate::{RouteArg, RouteHandler};
 
 pub(crate) enum RouteKind<State> {
-    Route(Handler<State>),
-    Redirect(String),
+    Route(RouteHandler<State>),
+    Redirect(String, RouteArg),
 }

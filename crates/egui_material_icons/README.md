@@ -1,3 +1,9 @@
+### Fork Notice:
+
+This `egui_material_icons` version uses my `egui` fork as dependency.
+
+**Note:** The examples on this fork don't run currently.
+
 # egui_material_icons
 
 [![egui_ver](https://img.shields.io/badge/egui-0.33.0-blue)](https://github.com/emilk/egui)

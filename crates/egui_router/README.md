@@ -1,3 +1,11 @@
+### Fork Notice:
+
+This is a stripped version of the `egui_router` - only native, no web support.
+
+But this version provides the possibility to add an `Any` type argument to the route when navigating.
+
+**Note:** The examples on this fork don't run currently.
+
 # egui_router
 
 [![egui_ver](https://img.shields.io/badge/egui-0.33.0-blue)](https://github.com/emilk/egui)

@@ -11,40 +11,15 @@ license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-async = ["egui_suspense/async"]
-
-[[example]]
-name = "async_router"
-required-features = ["async"]
-
-[[example]]
-name = "router"
-required-features = ["async"]
-
 [dependencies]
-egui.workspace = true
-egui_suspense = { workspace = true, optional = true }
-
-matchit = "0.8"
+egui = { workspace = true, default-features = false }
 thiserror = "2"
-form_urlencoded = "1"
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-web-sys = { version = "0.3", features = [
-    "History",
-    "PopStateEvent",
-    "HtmlCollection",
-] }
-js-sys = "0.3"
-wasm-bindgen = "0.2"
 
 [dev-dependencies]
 egui_inbox = { workspace = true, features = ["type_inbox"] }
-eframe = { workspace = true, default-features = true }
+eframe = { workspace = true, default-features = false }
 egui_animation = { workspace = true }
-tokio = { workspace = true, features = ["full"] }
-egui_suspense = { workspace = true, features = ["async", "tokio"] }
 
 [lints]
 workspace = true

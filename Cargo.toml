@@ -35,7 +35,6 @@ animation = ["dep:egui_animation"]
 async = [
     "egui_suspense/async",
     "egui_infinite_scroll/async",
-    "egui_router/async",
     "egui_inbox/async",
 ]
 dnd = ["dep:egui_dnd"]
@@ -87,7 +86,9 @@ egui_thumbhash = { path = "./crates/egui_thumbhash", version = "0.9.0" }
 egui_material_icons = { path = "./crates/egui_material_icons", version = "0.5.0" }
 hello_egui = { path = ".", version = "0.10.0" }
 
-egui = { version = "0.33.3", default-features = false }
+egui = { version = "0.33.3", default-features = false, git = "https://github.com/da-ferdl/egui", branch = "dev_egui_v0.33.3" }
+#egui = { version = "0.33.3", default-features = false, path = "../egui-fork/crates/egui" }
+
 egui_kittest = { version = "0.33.3" }
 eframe = { version = "0.33.3", default-features = false }
 egui_extras = { version = "0.33.3", default-features = false }

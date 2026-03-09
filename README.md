@@ -1,3 +1,12 @@
+### Fork Notice:
+
+This fork provides:
+- A stripped version of the `egui_router` - only native, no web support, but with the possibility to add an `Any` type argument to the route when navigating.<br>
+-> uses my `egui` fork as dependency
+- `egui_material_icons` with my `egui` fork as dependency.
+
+**Note:** The examples on this fork don't run currently.
+
 # Hello Egui!
 
 This project contains a collection of egui tools I've created during

@@ -1,4 +1,4 @@
-use crate::TransitionConfig;
+use crate::{RouteArgument, TransitionConfig};
 use egui::{Id, Ui, UiBuilder, Vec2};
 
 /// Trait for declaring a transition.
@@ -226,8 +226,16 @@ impl ActiveTransition {
         &mut self,
         ui: &mut Ui,
         state: &mut State,
-        (in_id, content_in): (usize, impl FnOnce(&mut Ui, &mut State)),
-        content_out: Option<(usize, impl FnOnce(&mut Ui, &mut State))>,
+        (in_id, in_arg, content_in): (
+            usize,
+            RouteArgument,
+            impl FnOnce(&mut Ui, &mut State, RouteArgument),
+        ),
+        content_out: Option<(
+            usize,
+            RouteArgument,
+            impl FnOnce(&mut Ui, &mut State, RouteArgument),
+        )>,
     ) -> ActiveTransitionResult {
         if !self.manual_control {
             let dt = ui.input(|i| i.stable_dt);
@@ -255,28 +263,28 @@ impl ActiveTransition {
                 let mut out_ui =
                     self.out
                         .create_child_ui(ui, eased_t, Id::new("router_child").with(in_id));
-                content_in(&mut out_ui, state);
+                content_in(&mut out_ui, state, in_arg);
             });
 
-            if let Some((out_id, content_out)) = content_out {
+            if let Some((out_id, out_arg, content_out)) = content_out {
                 with_temp_auto_id(ui, out_id, |ui| {
                     let mut in_ui = self.in_.create_child_ui(
                         ui,
                         eased_t_rev,
                         Id::new("router_child").with(out_id),
                     );
-                    content_out(&mut in_ui, state);
+                    content_out(&mut in_ui, state, out_arg);
                 });
             }
         } else {
-            if let Some((out_id, content_out)) = content_out {
+            if let Some((out_id, out_arg, content_out)) = content_out {
                 with_temp_auto_id(ui, out_id, |ui| {
                     let mut out_ui = self.out.create_child_ui(
                         ui,
                         eased_t_rev,
                         Id::new("router_child").with(out_id),
                     );
-                    content_out(&mut out_ui, state);
+                    content_out(&mut out_ui, state, out_arg);
                 });
             }
 
@@ -284,7 +292,7 @@ impl ActiveTransition {
                 let mut in_ui =
                     self.in_
                         .create_child_ui(ui, eased_t, Id::new("router_child").with(in_id));
-                content_in(&mut in_ui, state);
+                content_in(&mut in_ui, state, in_arg);
             });
         }
 
