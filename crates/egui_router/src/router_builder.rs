@@ -1,14 +1,8 @@
 use crate::route_kind::RouteKind;
-use crate::{EguiRouter, TransitionConfig};
-use crate::{RouteHandler, RouteHandlerError};
+use crate::{EguiRouter, MakeHandler, TransitionConfig};
 use std::any::Any;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::Arc;
-
-pub(crate) type ErrorUi<State> =
-    Arc<Box<dyn Fn(&mut egui::Ui, &State, &RouteHandlerError) + Send + Sync>>;
-pub(crate) type LoadingUi<State> = Arc<Box<dyn Fn(&mut egui::Ui, &State) + Send + Sync>>;
 
 /// Builder to create a [`EguiRouter`]
 pub struct RouterBuilder<State> {
@@ -20,9 +14,6 @@ pub struct RouterBuilder<State> {
     pub(crate) replace_transition: TransitionConfig,
 
     pub(crate) default_duration: Option<f32>,
-
-    pub(crate) error_ui: ErrorUi<State>,
-    pub(crate) loading_ui: LoadingUi<State>,
 
     pub(crate) swipe_back_gesture_enabled: bool,
     pub(crate) swipe_back_edge_width: f32,
@@ -51,12 +42,6 @@ impl<State: 'static> RouterBuilder<State> {
             backward_transition: TransitionConfig::default(),
             replace_transition: TransitionConfig::fade(),
             default_duration: None,
-            error_ui: Arc::new(Box::new(|ui, _, err| {
-                ui.label(format!("Error: {err}"));
-            })),
-            loading_ui: Arc::new(Box::new(|ui, _| {
-                ui.spinner();
-            })),
             swipe_back_gesture_enabled: false,
             swipe_back_edge_width: 40.0,
             swipe_back_threshold: 0.4,
@@ -94,23 +79,6 @@ impl<State: 'static> RouterBuilder<State> {
         self
     }
 
-    /// Set the error UI
-    /// Call this *before* you call `.async_route()`, otherwise the error UI will not be used in async routes.
-    pub fn error_ui(
-        mut self,
-        f: impl Fn(&mut egui::Ui, &State, &RouteHandlerError) + 'static + Send + Sync,
-    ) -> Self {
-        self.error_ui = Arc::new(Box::new(f));
-        self
-    }
-
-    /// Set the loading UI
-    /// Call this *before* you call `.async_route()`, otherwise the loading UI will not be used in async routes.
-    pub fn loading_ui(mut self, f: impl Fn(&mut egui::Ui, &State) + 'static + Send + Sync) -> Self {
-        self.loading_ui = Arc::new(Box::new(f));
-        self
-    }
-
     /// Add a route. Check the [matchit] documentation for information about the route syntax.
     /// The handler will be called with [`crate::Request`] and should return a [Route].
     ///
@@ -136,21 +104,23 @@ impl<State: 'static> RouterBuilder<State> {
     ///     .route("/", my_handler)
     ///     .route("/:post", my_fallible_handler)
     ///     .build(&mut ());
-    pub fn route(mut self, route: &str, mut handler: RouteHandler<State>) -> Self {
+    pub fn route<Han: MakeHandler<State> + 'static>(
+        mut self,
+        route: &str,
+        mut handler: Han,
+    ) -> Self {
         self.routes.insert(
             route.into(),
-            RouteKind::Route(Box::new(move |req| handler(req))),
+            RouteKind::Route(Box::new(move || handler.handle())),
         );
         self
     }
 
     /// Add a set of routes at once.
-    pub fn routes(mut self, routes: Vec<(&str, RouteHandler<State>)>) -> Self {
+    pub fn routes<Han: MakeHandler<State> + 'static>(mut self, routes: Vec<(&str, Han)>) -> Self {
         for mut r in routes {
-            self.routes.insert(
-                r.0.into(),
-                RouteKind::Route(Box::new(move |req| (r.1)(req))),
-            );
+            self.routes
+                .insert(r.0.into(), RouteKind::Route(Box::new(move || r.1.handle())));
         }
 
         self

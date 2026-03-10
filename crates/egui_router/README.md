@@ -1,6 +1,6 @@
 ### Fork Notice:
 
-This is a stripped version of the `egui_router` - only native, no web support.
+This is a stripped and simplified version of the `egui_router` - only native, no web support.
 
 But this version provides the possibility to add an `Any` type argument to the route when navigating.
 

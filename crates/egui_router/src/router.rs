@@ -1,8 +1,8 @@
 use crate::route_kind::RouteKind;
-use crate::router_builder::{ErrorUi, RouterBuilder};
+use crate::router_builder::RouterBuilder;
 use crate::transition::{ActiveTransition, ActiveTransitionResult};
 use crate::{
-    CurrentTransition, Request, RouteArg, RouteArgument, RouteState, RouterError, RouterResult,
+    CurrentTransition, RouteArg, RouteArgument, RouteState, RouterError, RouterResult,
     TransitionConfig, ID,
 };
 use egui::{scroll_area, Id, Sense, Ui};
@@ -38,8 +38,6 @@ pub struct EguiRouter<State> {
     current_transition: Option<CurrentTransition<State>>,
     default_duration: Option<f32>,
 
-    error_ui: ErrorUi<State>,
-
     /// Enable iOS-style swipe-to-go-back gesture
     swipe_back_gesture_enabled: bool,
     /// Minimum distance from left edge to start the gesture (in pixels)
@@ -69,7 +67,6 @@ impl<State: 'static> EguiRouter<State> {
             backward_transition: builder.backward_transition,
             replace_transition: builder.replace_transition,
             default_duration: builder.default_duration,
-            error_ui: builder.error_ui,
             swipe_back_gesture_enabled: builder.swipe_back_gesture_enabled,
             swipe_back_edge_width: builder.swipe_back_edge_width,
             swipe_back_threshold: builder.swipe_back_threshold,
@@ -120,10 +117,7 @@ impl<State: 'static> EguiRouter<State> {
 
         match route_kind {
             RouteKind::Route(handler) => {
-                let route = handler(Request {
-                    arg: route_arg.clone(),
-                    state,
-                });
+                let route = handler();
                 self.history.push(RouteState {
                     path: path.into(),
                     route,
@@ -237,10 +231,7 @@ impl<State: 'static> EguiRouter<State> {
         match route_kind {
             RouteKind::Route(handler) => {
                 let leaving_route = self.history.pop();
-                let route = handler(Request {
-                    arg: route_arg.clone(),
-                    state,
-                });
+                let route = handler();
                 self.history.push(RouteState {
                     path: path,
                     route,
@@ -290,41 +281,22 @@ impl<State: 'static> EguiRouter<State> {
                 Some(transition.active_transition.show(
                     ui,
                     state,
-                    (
-                        last.id,
-                        RouteArgument(&last.route_arg),
-                        |ui, state, arg| match &mut last.route {
-                            Ok(route) => {
-                                route.ui(ui, state, arg);
-                            }
-                            Err(err) => {
-                                (self.error_ui)(ui, state, err);
-                            }
-                        },
-                    ),
+                    (last.id, RouteArgument(&last.route_arg), |ui, state, arg| {
+                        last.route.ui(ui, state, arg)
+                    }),
                     leaving_route_state.map(|r| {
                         (
                             r.id,
                             RouteArgument(&r.route_arg),
-                            |ui: &mut Ui, state: &mut _, arg: RouteArgument| match &mut r.route {
-                                Ok(route) => {
-                                    route.ui(ui, state, arg);
-                                }
-                                Err(err) => {
-                                    (self.error_ui)(ui, state, err);
-                                }
+                            |ui: &mut Ui, state: &mut _, arg: RouteArgument| {
+                                r.route.ui(ui, state, arg)
                             },
                         )
                     }),
                 ))
             } else {
-                ActiveTransition::show_default(ui, last.id, |ui| match &mut last.route {
-                    Ok(route) => {
-                        route.ui(ui, state, RouteArgument(&last.route_arg));
-                    }
-                    Err(err) => {
-                        (self.error_ui)(ui, state, err);
-                    }
+                ActiveTransition::show_default(ui, last.id, |ui| {
+                    last.route.ui(ui, state, RouteArgument(&last.route_arg))
                 });
                 None
             };

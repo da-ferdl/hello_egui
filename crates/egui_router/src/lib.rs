@@ -10,7 +10,7 @@ pub mod transition;
 
 use crate::transition::{ActiveTransition, SlideFadeTransition, SlideTransition, Transition};
 use egui::emath::ease_in_ease_out;
-use egui::{Ui, Vec2};
+use egui::Vec2;
 use std::any::Any;
 use std::rc::Rc;
 use std::sync::atomic::AtomicUsize;
@@ -18,13 +18,31 @@ use std::sync::atomic::AtomicUsize;
 pub use router::EguiRouter;
 pub use router_builder::RouterBuilder;
 
+/// Trait for a route handler.
+pub trait MakeHandler<State> {
+    /// Handles route creation.
+    fn handle(&mut self) -> Box<dyn Route<State>>;
+}
+
+/// [`MakeHandler`] closure implementation.
+impl<F, State, R> MakeHandler<State> for F
+where
+    F: Fn() -> R,
+    R: Route<State> + 'static,
+{
+    fn handle(&mut self) -> Box<dyn Route<State>> {
+        Box::new(self())
+    }
+}
+
 /// A route instance created by a [`RouteHandler`]
 pub trait Route<State = ()> {
     /// Render the route ui
     fn ui(&mut self, ui: &mut egui::Ui, state: &mut State, route_arg: RouteArgument<'_>);
 }
 
-impl<F: FnMut(&mut Ui, &mut State, RouteArgument<'_>), State> Route<State> for F {
+/// [`Route`] closure implementation.
+impl<F: FnMut(&mut egui::Ui, &mut State, RouteArgument<'_>), State> Route<State> for F {
     fn ui(&mut self, ui: &mut egui::Ui, state: &mut State, route_arg: RouteArgument<'_>) {
         self(ui, state, route_arg);
     }
@@ -34,7 +52,7 @@ static ID: AtomicUsize = AtomicUsize::new(0);
 
 struct RouteState<State> {
     path: String,
-    route: RouteHandlerResult<Box<dyn Route<State>>>,
+    route: Box<dyn Route<State>>,
     route_arg: RouteArg,
     id: usize,
     state: u32,
@@ -49,14 +67,6 @@ pub enum RouterError {
     /// Not found error
     #[error("Route not found")]
     NotFound,
-}
-
-/// Request passed to a [`handler::MakeHandler`]
-pub struct Request<'a, State = ()> {
-    /// Optional argument passed to the request.
-    pub arg: RouteArg,
-    /// The custom state
-    pub state: &'a mut State,
 }
 
 /// Internal type definition for a optional route argument.
@@ -75,27 +85,6 @@ impl<'a> RouteArgument<'a> {
         (self.0.as_ref()?).downcast_ref()
     }
 }
-
-/// Error returned from a [RouteHandler]
-#[derive(Debug, thiserror::Error)]
-pub enum RouteHandlerError {
-    /// Not found error
-    #[error("Page not found")]
-    NotFound,
-    /// Custom error message
-    #[error("{0}")]
-    Message(String),
-    /// Boxed error
-    #[error("Handler error: {0}")]
-    Boxed(Box<dyn std::error::Error + Send + Sync>),
-}
-
-/// A [RouteHandler] Result type
-pub type RouteHandlerResult<T = ()> = Result<T, RouteHandlerError>;
-
-/// Handler for a route
-pub type RouteHandler<State> =
-    Box<dyn FnMut(Request<State>) -> RouteHandlerResult<Box<dyn Route<State>>>>;
 
 /// Page transition configuration
 #[derive(Debug, Clone)]
